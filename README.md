@@ -40,11 +40,11 @@ Mikrotikルータが出すEoIPパケット(IPv6 Next-header:97)の当該ヘッ�
 
 これが
 
-![image]([https://hackmd.io/_uploads/SyF0esF6A.png](https://github.com/user-attachments/assets/2cafc42f-ca46-4764-bd06-7ad86a6dd41a))
+<img width="1919" alt="image" src="https://github.com/user-attachments/assets/d48eb533-fdae-402a-a6bd-9753c89fb421">
 
 こうなる
 
-![image]([https://hackmd.io/_uploads/SJGLZitTR.png](https://github.com/user-attachments/assets/fd367937-2768-4ffa-963f-9ea1133bb16f))
+<img width="1920" alt="image" src="https://github.com/user-attachments/assets/8783f48a-636a-4edc-93b0-4669d3440eac">
 
 それ以外のパケットはパススルーします。
 

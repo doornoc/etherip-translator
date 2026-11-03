@@ -144,8 +144,8 @@ struct addrlist init_list(void){
    for (size_t i = 0; i < 4; i++) {
       list4->addr[i] = 0;
    }
-   for (size_t i = 0; i < 2; i++) {
-      list6->eip[i] = 0;
+   for (size_t i = 0; i < 8; i++) {
+      list4->eip[i] = 0;
    }
    list4->next = NULL;
 
@@ -161,7 +161,7 @@ struct addrlist6* add_list6(struct addrlist6* list6, uint8_t* p){
    // 宛先IPが過去に変換したことがあるか確認 あればEtherIPヘッダの内容だけを更新
    for (struct addrlist6* j = list6; j->next != NULL; j = j->next) {
       if (memcmp((void*)p+38, j->addr, sizeof(uint8_t) * 16) == 0) {
-         memcpy(list6->eip, &p[54], sizeof(uint8_t) * 2);
+         memcpy(j->eip, &p[54], sizeof(uint8_t) * 2);
          return list6;
       }
    }
@@ -269,7 +269,7 @@ int ifbind(int sock, int ifindex, struct sockaddr_ll* if_sall){
       * 受信インタフェースの指定。
       * bindしないと全インタフェースからの受信
       */
-      memset(if_sall, 0, sizeof(if_sall));
+      memset(if_sall, 0, sizeof(*if_sall));
       if_sall->sll_family = AF_PACKET;
       if_sall->sll_ifindex = ifindex;
       if(bind(sock, (struct sockaddr *) if_sall, sizeof(*if_sall)) < 0) {
@@ -321,7 +321,7 @@ int transfer(int* s_in, int* s_ex, struct sockaddr_ll* if_sall_in, struct sockad
                memcpy(&rbuf[22], &buf[38], sizeof(uint8_t) * 16); //L3 sec IP addrss!
                memcpy(&rbuf[38], &buf[22], sizeof(uint8_t) * 16); //L3 dst IP addrss!
                memcpy(&rbuf[54], &buf[54], sizeof(uint8_t) * 2); //L4 EtherIP
-               memcpy(&rbuf[56], &buf[56], sizeof(uint8_t) * (ETH_FRAME_LEN_ORIG - 56)); //payload
+               memcpy(&rbuf[56], &buf[56], sizeof(uint8_t) * (len - 56)); //payload
 
                sendto(*s_in, rbuf, len, 0, (struct sockaddr *)if_sall_in, sizeof(*if_sall_in));
                return len;

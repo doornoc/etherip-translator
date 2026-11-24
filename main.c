@@ -108,7 +108,8 @@ struct addrlist {
    struct addrlist4* ipv4;
 };
 struct addrlist6 {
-   uint8_t addr[16];
+   uint8_t local[16];  //Mikrotik側アドレス
+   uint8_t remote[16]; //対向側アドレス
    uint8_t eip[2]; //EtherIPヘッダ
    struct addrlist6* next;
 };
@@ -127,7 +128,8 @@ struct addrlist init_list(void){
       if(debug_f) printf("malloc list6\n");
    }
    for (size_t i = 0; i < 16; i++) {
-      list6->addr[i] = 0;
+      list6->local[i] = 0;
+      list6->remote[i] = 0;
    }
    for (size_t i = 0; i < 2; i++) {
       list6->eip[i] = 0;
@@ -155,23 +157,25 @@ struct addrlist init_list(void){
    list.ipv4 = list4;
    return list;
 }
-// Mikrotikから来たパケットの宛先IPを見て変換リストに追加:IPv6
+// Mikrotikから来たパケットの送信元IP(local)と宛先IP(remote)の組を見て変換リストに追加:IPv6
 struct addrlist6* add_list6(struct addrlist6* list6, uint8_t* p){
    debug("add6");
-   // 宛先IPが過去に変換したことがあるか確認 あればEtherIPヘッダの内容だけを更新
+   // local・remoteの組が過去に変換したことがあるか確認 あればEtherIPヘッダの内容だけを更新
    for (struct addrlist6* j = list6; j->next != NULL; j = j->next) {
-      if (memcmp((void*)p+38, j->addr, sizeof(uint8_t) * 16) == 0) {
+      if (memcmp((void*)p+22, j->local, sizeof(uint8_t) * 16) == 0 &&
+          memcmp((void*)p+38, j->remote, sizeof(uint8_t) * 16) == 0) {
          memcpy(j->eip, &p[54], sizeof(uint8_t) * 2);
          return list6;
       }
    }
-   // 宛先IPが過去に変換したことがなければ新規でリストに追加
+   // local・remoteの組が過去に変換したことがなければ新規でリストに追加
    debug("add new");
    struct addrlist6* new = (struct addrlist6*)malloc(sizeof(struct addrlist6));
    if (new == NULL) {
       die("malloc new\n");
    }
-   memcpy(new->addr, &p[38], sizeof(uint8_t) * 16);
+   memcpy(new->local, &p[22], sizeof(uint8_t) * 16);
+   memcpy(new->remote, &p[38], sizeof(uint8_t) * 16);
    memcpy(new->eip, &p[54], sizeof(uint8_t) * 2);
    new->next = list6;
    return new;
@@ -181,12 +185,13 @@ struct addrlist6* add_list6(struct addrlist6* list6, uint8_t* p){
 //    未実装
 // }
 
-// 外部から来たパケットの送信元IPを見て変換リストにあるか確認:IPv6
+// 外部から来たパケットの送信元IP(remote)と宛先IP(local)の組を見て変換リストにあるか確認:IPv6
 struct addrlist6* search_list6(struct addrlist6* list6, uint8_t* p){
    debug("search6");
    // 変換リストにあればPass
    for (struct addrlist6* j = list6; j->next != NULL; j = j->next) {
-      if (memcmp((void*)p+22, j->addr, sizeof(uint8_t) * 16) == 0) {
+      if (memcmp((void*)p+22, j->remote, sizeof(uint8_t) * 16) == 0 &&
+          memcmp((void*)p+38, j->local, sizeof(uint8_t) * 16) == 0) {
          return j;
       }
    }
